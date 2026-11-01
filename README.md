@@ -1,5 +1,7 @@
 # Vitrine que Fala — Speaking Storefront
 
+https://github.com/eliezer-tavares/vitrine-que-fala/actions/workflows/ci.yml
+
 **Arquitetado por Eliezer Tavares de Oliveira** (architected by Eliezer Tavares de Oliveira)
 Contact / Contato: [contact@eliezertavaresdeoliveira.com](mailto:contact@eliezertavaresdeoliveira.com)
 
