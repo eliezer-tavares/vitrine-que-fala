@@ -1,0 +1,78 @@
+# Deploys to Google Cloud Run on v* tags (and manual dispatch).
+# Skips itself until GCP variables exist — CI stays green before setup.
+# Full setup guide: infra/cloud-run.md
+name: Deploy (Cloud Run)
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: cloud-run-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build & deploy
+    runs-on: ubuntu-latest
+    if: vars.GCP_PROJECT != ''
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build & push images
+        env:
+          PROJECT: ${{ vars.GCP_PROJECT }}
+          REGION: ${{ vars.GCP_REGION }}
+        run: |
+          REPO="${REGION}-docker.pkg.dev/${PROJECT}/vitrine"
+          TAG="${GITHUB_REF_NAME}"
+          for svc in api-gateway catalog order alttext-worker; do
+            gcloud builds submit ./backend \
+              --tag "${REPO}/${svc}:${TAG}" \
+              --substitutions "_SERVICE=${svc}" \
+              || { docker build --build-arg SERVICE="${svc}" -t "${REPO}/${svc}:${TAG}" ./backend && docker push "${REPO}/${svc}:${TAG}"; }
+          done
+          gcloud builds submit ./ai-vision-service --tag "${REPO}/ai:${TAG}" \
+            || { docker build -t "${REPO}/ai:${TAG}" ./ai-vision-service && docker push "${REPO}/ai:${TAG}"; }
+          gcloud builds submit ./web --tag "${REPO}/web:${TAG}" \
+            || { docker build -t "${REPO}/web:${TAG}" ./web && docker push "${REPO}/web:${TAG}"; }
+
+      - name: Deploy services
+        env:
+          PROJECT: ${{ vars.GCP_PROJECT }}
+          REGION: ${{ vars.GCP_REGION }}
+          DATABASE_URL: ${{ secrets.CLOUD_DATABASE_URL }}
+          REDIS_ADDR: ${{ vars.REDIS_ADDR }}
+        run: |
+          REPO="${REGION}-docker.pkg.dev/${PROJECT}/vitrine"
+          TAG="${GITHUB_REF_NAME}"
+          deploy() {
+            gcloud run deploy "$1" --image "$2" --region "${REGION}" --project "${PROJECT}" "${@:3}"
+          }
+          deploy ai    "${REPO}/ai:${TAG}"    --allow-unauthenticated --cpu 2 --memory 2Gi \
+            --set-env-vars "PIPELINE=stub,TESSERACT_LANGS=por+eng"
+          deploy catalog "${REPO}/catalog:${TAG}" --no-allow-unauthenticated --cpu 1 --memory 256Mi \
+            --set-env-vars "DATABASE_URL=${DATABASE_URL},REDIS_ADDR=${REDIS_ADDR}"
+          deploy order "${REPO}/order:${TAG}" --no-allow-unauthenticated --cpu 1 --memory 256Mi \
+            --set-env-vars "REDIS_ADDR=${REDIS_ADDR}"
+          deploy alttext-worker "${REPO}/alttext-worker:${TAG}" --no-allow-unauthenticated \
+            --cpu 1 --memory 512Mi --cpu-always \
+            --set-env-vars "DATABASE_URL=${DATABASE_URL},REDIS_ADDR=${REDIS_ADDR},AI_SERVICE_URL=$(gcloud run services describe ai --region "${REGION}" --project "${PROJECT}" --format 'value(status.url)'),IMAGES_STREAM=images.pending"
+          deploy gateway "${REPO}/api-gateway:${TAG}" --allow-unauthenticated --cpu 1 --memory 256Mi \
+            --set-env-vars "JWT_SECRET=$(gcloud secrets versions access latest --secret jwt-secret --project "${PROJECT}"),CATALOG_URL=$(gcloud run services describe catalog --region "${REGION}" --project "${PROJECT}" --format 'value(status.url)'),ORDER_URL=$(gcloud run services describe order --region "${REGION}" --project "${PROJECT}" --format 'value(status.url)'),AI_URL=$(gcloud run services describe ai --region "${REGION}" --project "${PROJECT}" --format 'value(status.url)')"
+          deploy web "${REPO}/web:${TAG}" --allow-unauthenticated --cpu 1 --memory 256Mi
+
+      - name: Public URL
+        run: |
+          gcloud run services describe gateway \
+            --region "${{ vars.GCP_REGION }}" --project "${{ vars.GCP_PROJECT }}" \
+            --format 'value(status.url)'

@@ -1,0 +1,43 @@
+{
+  "siteTitle": "Speaking Storefront",
+  "siteTagline": "Accessible e-commerce with AI-generated, open-source alt-text",
+  "skipLink": "Skip to main content",
+  "language": {
+    "label": "Language",
+    "changed": "Language switched to {{name}}."
+  },
+  "blindMode": {
+    "toggle": "No-Eyes Experience",
+    "onAnnouncement": "No-Eyes Experience on: images are hidden. Keyboard navigation keeps working.",
+    "offAnnouncement": "No-Eyes Experience off: images are visible again."
+  },
+  "products": {
+    "title": "Products",
+    "loading": "Loading products…",
+    "details": "See details for {{name}}"
+  },
+  "dialog": {
+    "close": "Close",
+    "descriptionLabel": "Product description"
+  },
+  "demo": {
+    "title": "Demo: AI generating alt-text",
+    "pickImage": "Choose a product image",
+    "submit": "Generate description",
+    "noFile": "Choose an image file before generating a description.",
+    "generating": "Generating description with AI… This may take a few seconds.",
+    "ready": "Description ready!",
+    "error": "Could not generate a description right now. Please try again.",
+    "altFor": "Alt-text in {{locale}}",
+    "listen": "Listen in {{locale}}",
+    "speechFallback": "No voice available for {{locale}} on this device. The text remains visible on screen.",
+    "ocr": "Text found in the image"
+  },
+  "app": {
+    "loadError": "Could not load the catalog. Check your connection and reload the page."
+  },
+  "footer": {
+    "architectedBy": "Architected by Eliezer Tavares de Oliveira",
+    "tagline": "Accessibility is the priority, not a feature — WCAG 2.2 AA"
+  }
+}

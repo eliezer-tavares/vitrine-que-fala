@@ -1,0 +1,10 @@
+# Example WSL2 memory cap for an 8 GB Windows notebook.
+# Copy this file to C:\Users\<you>\.wslconfig and restart WSL:
+#   wsl --shutdown
+# Docker (WSL2 backend) will then respect the 4 GB limit, leaving
+# room for Windows, NVDA and the browser.
+
+[wsl2]
+memory=4GB
+processors=4
+swap=8GB

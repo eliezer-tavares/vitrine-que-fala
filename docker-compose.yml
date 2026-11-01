@@ -1,0 +1,96 @@
+# Vitrine que Fala — local stack sized for an 8 GB RAM notebook (RAM-BUDGET.md).
+# Usage: cp .env.example .env && docker compose up -d
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-vitrine}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vitrine-dev}
+      POSTGRES_DB: ${POSTGRES_DB:-vitrine}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./seed:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vitrine} -d ${POSTGRES_DB:-vitrine}"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  ai:
+    build: ./ai-vision-service
+    environment:
+      PIPELINE: ${PIPELINE:-stub}
+      TESSERACT_LANGS: ${TESSERACT_LANGS:-por+eng}
+    ports:
+      - "8083:8083"
+
+  catalog:
+    build:
+      context: ./backend
+      args: { SERVICE: catalog }
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-vitrine}:${POSTGRES_PASSWORD:-vitrine-dev}@db:5432/${POSTGRES_DB:-vitrine}
+      REDIS_ADDR: redis:6379
+      PORT: 8081
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    ports:
+      - "8081:8081"
+
+  order:
+    build:
+      context: ./backend
+      args: { SERVICE: order }
+    environment:
+      REDIS_ADDR: redis:6379
+      PORT: 8082
+    depends_on:
+      redis: { condition: service_healthy }
+    ports:
+      - "8082:8082"
+
+  worker:
+    build:
+      context: ./backend
+      args: { SERVICE: alttext-worker }
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-vitrine}:${POSTGRES_PASSWORD:-vitrine-dev}@db:5432/${POSTGRES_DB:-vitrine}
+      REDIS_ADDR: redis:6379
+      AI_SERVICE_URL: http://ai:8083
+      WORKERS: "4"
+      PORT: "8084"
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      ai: { condition: service_started }
+    ports:
+      - "8084:8084"
+
+  gateway:
+    build:
+      context: ./backend
+      args: { SERVICE: api-gateway }
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      CATALOG_URL: http://catalog:8081
+      ORDER_URL: http://order:8082
+      AI_URL: http://ai:8083
+      PORT: "8080"
+    depends_on:
+      - catalog
+      - order
+      - ai
+    ports:
+      - "8080:8080"
+
+volumes:
+  db-data:

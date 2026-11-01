@@ -1,0 +1,216 @@
+openapi: 3.0.3
+info:
+  title: Vitrine que Fala — Public API (v1.0)
+  description: |
+    Edge API served by api-gateway. Locale negotiation: clients send a standard
+    `Accept-Language` header; the gateway resolves it against supported locales
+    (pt-BR, en-US) with a fallback chain and forwards `X-Client-Locale`
+    downstream. Auth uses JWT bearer tokens issued by `/auth/token`.
+    Architected by Eliezer Tavares de Oliveira.
+  version: 1.0.0
+  contact:
+    name: Eliezer Tavares de Oliveira
+    email: contact@eliezertavaresdeoliveira.com
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local docker-compose gateway
+tags:
+  - name: auth
+  - name: catalog
+  - name: orders
+  - name: ai
+paths:
+  /auth/token:
+    post:
+      tags: [auth]
+      summary: Issue a demo JWT bearer token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sub]
+              properties:
+                sub:
+                  type: string
+                  example: demo-user
+      responses:
+        "200":
+          description: Token issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                    example: Bearer
+                  expires_in:
+                    type: integer
+                    example: 3600
+  /products:
+    get:
+      tags: [catalog]
+      summary: List products (localized)
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguage"
+      responses:
+        "200":
+          description: Localized product list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductList"
+  /products/{id}:
+    get:
+      tags: [catalog]
+      summary: Product detail (localized)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: "#/components/parameters/AcceptLanguage"
+      responses:
+        "200":
+          description: Localized product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: Not found (or no translation for the negotiated locale)
+  /orders:
+    post:
+      tags: [orders]
+      summary: Create an order (publishes OrderPlaced)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguage"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewOrder"
+      responses:
+        "201":
+          description: Localized receipt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Receipt"
+        "400":
+          description: Empty or invalid items
+        "401":
+          description: Missing/invalid bearer token
+  /ai/alt-text:
+    post:
+      tags: [ai]
+      summary: Generate alt-text for an image (multipart upload)
+      description: |
+        Returns per-locale alt-text plus OCR text extracted from the image.
+        v1.0 locales: pt-BR, en-US. Public in v1.0 to keep the recruiter demo
+        frictionless; protected in v2.0.
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguage"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Alt-text generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AltTextResult"
+        "413":
+          description: Image too large (max 8 MB)
+        "503":
+          description: AI pipeline unavailable
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    AcceptLanguage:
+      name: Accept-Language
+      in: header
+      required: false
+      description: "RFC 5646 header; e.g. `en-US,en;q=0.9` or `th-TH,th;q=0.9,en;q=0.8` (falls back to en-US)"
+      schema: { type: string }
+      example: pt-BR,pt;q=0.9,en;q=0.8
+  schemas:
+    Product:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string }
+        alt_text: { type: string, description: AI-generated image description in the negotiated locale }
+        price:
+          type: object
+          properties:
+            minor_units: { type: integer, example: 7900 }
+            currency: { type: string, example: BRL }
+            formatted: { type: string, example: "R$ 79,00" }
+    ProductList:
+      type: object
+      properties:
+        locale: { type: string, example: pt-BR }
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+    NewOrder:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [product_id, quantity]
+            properties:
+              product_id: { type: string, format: uuid }
+              quantity: { type: integer, minimum: 1 }
+    Receipt:
+      type: object
+      properties:
+        order_id: { type: string, format: uuid }
+        locale: { type: string, example: pt-BR }
+        message: { type: string, example: "Pedido confirmado" }
+        total:
+          type: object
+          properties:
+            minor_units: { type: integer }
+            currency: { type: string, example: BRL }
+            formatted: { type: string }
+    AltTextResult:
+      type: object
+      properties:
+        alt_texts:
+          type: object
+          description: Alt-text per locale
+          properties:
+            pt-BR: { type: string }
+            en-US: { type: string }
+        ocr_text:
+          type: array
+          items: { type: string }
+          description: Text fragments found inside the image (brand, "50% OFF")

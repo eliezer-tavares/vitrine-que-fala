@@ -1,0 +1,43 @@
+{
+  "siteTitle": "Vitrine que Fala",
+  "siteTagline": "E-commerce acessível com alt-text gerado por IA open source",
+  "skipLink": "Pular para o conteúdo principal",
+  "language": {
+    "label": "Idioma",
+    "changed": "Idioma alterado para {{name}}."
+  },
+  "blindMode": {
+    "toggle": "Experiência Sem Olhos",
+    "onAnnouncement": "Experiência Sem Olhos ativada: as imagens foram ocultadas. A navegação continua por teclado.",
+    "offAnnouncement": "Experiência Sem Olhos desativada: as imagens voltaram a aparecer."
+  },
+  "products": {
+    "title": "Produtos",
+    "loading": "Carregando produtos…",
+    "details": "Ver detalhes de {{name}}"
+  },
+  "dialog": {
+    "close": "Fechar",
+    "descriptionLabel": "Descrição do produto"
+  },
+  "demo": {
+    "title": "Demonstração: IA gerando alt-text",
+    "pickImage": "Escolha uma imagem de produto",
+    "submit": "Gerar descrição",
+    "noFile": "Escolha um arquivo de imagem antes de gerar a descrição.",
+    "generating": "Gerando descrição com IA… Isso pode levar alguns segundos.",
+    "ready": "Descrição pronta!",
+    "error": "Não foi possível gerar a descrição agora. Tente novamente.",
+    "altFor": "Alt-text em {{locale}}",
+    "listen": "Ouvir em {{locale}}",
+    "speechFallback": "Voz indisponível para {{locale}} neste dispositivo. O texto permanece visível na tela.",
+    "ocr": "Texto encontrado na imagem"
+  },
+  "app": {
+    "loadError": "Não foi possível carregar o catálogo. Verifique sua conexão e recarregue a página."
+  },
+  "footer": {
+    "architectedBy": "Arquitetado por Eliezer Tavares de Oliveira",
+    "tagline": "Acessibilidade é prioridade, não recurso — WCAG 2.2 AA"
+  }
+}

@@ -1,0 +1,264 @@
+/* Vitrine que Fala — storefront styles.
+   Palette checked for WCAG AA contrast: #1f2430 on #ffffff, #ffffff on
+   #0b5cad, muted #4a4f5c on #ffffff. Motion respects prefers-reduced-motion. */
+
+:root {
+  --ink: #1f2430;
+  --ink-muted: #4a4f5c;
+  --brand: #0b5cad;
+  --brand-dark: #084580;
+  --surface: #ffffff;
+  --surface-alt: #f2f6fb;
+  --danger: #8a1f1f;
+  --focus: #b35c00;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background: var(--surface);
+  line-height: 1.55;
+}
+
+/* --- screen-reader helpers --------------------------------------------- */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* --- skip link ---------------------------------------------------------- */
+.skip-link {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  background: var(--brand);
+  color: #ffffff;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0 0 0.5rem 0;
+  font-weight: 600;
+  z-index: 10;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+/* --- focus visibility ---------------------------------------------------- */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* --- header -------------------------------------------------------------- */
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  padding: 1rem 1.5rem;
+  background: var(--surface-alt);
+  border-bottom: 2px solid var(--brand);
+}
+
+header h1 {
+  font-size: 1.35rem;
+  margin: 0;
+  margin-right: auto;
+}
+
+header p {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+button,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: var(--brand);
+  color: #ffffff;
+  border: 2px solid var(--brand-dark);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+}
+
+button:hover {
+  background: var(--brand-dark);
+}
+
+select {
+  padding: 0.45rem 0.5rem;
+  border: 2px solid var(--brand);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* --- main ---------------------------------------------------------------- */
+main {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.product-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 1.25rem;
+}
+
+.product-card {
+  border: 2px solid var(--surface-alt);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: var(--surface);
+}
+
+.product-card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.product-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  background: var(--surface-alt);
+}
+
+.price {
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+/* --- blind mode (No-Eyes Experience) ------------------------------------- */
+/* Images disappear; alt-text becomes the interface, like for a screen-reader
+   user. Everything keeps working by keyboard. */
+html[data-blind-mode="on"] .product-image {
+  display: none;
+}
+
+html[data-blind-mode="on"] .product-card,
+html[data-blind-mode="on"] .dialog {
+  border-color: var(--brand);
+  border-width: 3px;
+}
+
+/* --- dialog ---------------------------------------------------------------- */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 3rem 1rem;
+  overflow-y: auto;
+}
+
+.dialog {
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  max-width: 32rem;
+  width: 100%;
+}
+
+.dialog h2 {
+  margin-top: 0;
+}
+
+/* --- demo panel -------------------------------------------------------------- */
+.demo {
+  margin-top: 2.5rem;
+  border: 2px dashed var(--brand);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  background: var(--surface-alt);
+}
+
+.demo form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 0.75rem 0;
+}
+
+.demo label {
+  font-weight: 600;
+}
+
+.demo input[type="file"] {
+  font: inherit;
+}
+
+.demo .status {
+  min-height: 1.5rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.alt-text-block {
+  background: var(--surface);
+  border: 2px solid var(--surface-alt);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin: 0.75rem 0;
+}
+
+.alt-text-block h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.alt-text-block p {
+  margin: 0.25rem 0 0.75rem;
+}
+
+.ocr-note {
+  color: var(--ink-muted);
+}
+
+/* --- footer ------------------------------------------------------------------ */
+footer {
+  border-top: 2px solid var(--brand);
+  padding: 1rem 1.5rem;
+  color: var(--ink-muted);
+}
+
+footer a {
+  color: var(--brand);
+}
+
+[role="alert"] {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

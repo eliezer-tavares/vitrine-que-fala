@@ -1,0 +1,9 @@
+# Ruff config for ai-vision-service.
+# B008 is the standard FastAPI dependency-injection idiom (Depends/File in
+# argument defaults), so it is explicitly allowed here.
+[lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM"]
+ignore = ["B008"]
+
+[lint.per-file-ignores]
+"tests/*" = ["S101"]

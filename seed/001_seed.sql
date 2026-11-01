@@ -1,0 +1,63 @@
+-- Vitrine que Fala — v1.0 seed: bilingual catalog with pre-computed alt-text.
+-- Mounted into Postgres' docker-entrypoint-initdb.d, so a fresh `docker compose up`
+-- already demos the "No-Eyes Experience" without any model download (ADR-0005).
+
+INSERT INTO products (id, price_minor, currency, image_url, created_at) VALUES
+  ('11111111-1111-1111-1111-111111111111', 7900, 'BRL', 'https://placehold.co/480x300?text=Poncho', now()),
+  ('22222222-2222-2222-2222-222222222222', 4500, 'BRL', 'https://placehold.co/480x300?text=Guarda-chuva', now()),
+  ('33333333-3333-3333-3333-333333333333', 15900, 'BRL', 'https://placehold.co/480x300?text=Mochila', now()),
+  ('44444444-4444-4444-4444-444444444444', 24900, 'BRL', 'https://placehold.co/480x300?text=Fone', now()),
+  ('55555555-5555-5555-5555-555555555555', 9900, 'BRL', 'https://placehold.co/480x300?text=Garrafa', now()),
+  ('66666666-6666-6666-6666-666666666666', 12900, 'BRL', 'https://placehold.co/480x300?text=Luminaria', now())
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO product_translations (product_id, locale, name, description, alt_text) VALUES
+  ('11111111-1111-1111-1111-111111111111', 'pt-BR',
+   'Poncho impermeável com capuz',
+   'Poncho de poliéster impermeável com capuz embutido, ideal para dias de chuva. Tamanho único.',
+   'Poncho amarelo dobrado sobre uma mesa clara, com a etiqueta da marca visível no canto.'),
+  ('11111111-1111-1111-1111-111111111111', 'en-US',
+   'Waterproof hooded rain poncho',
+   'Waterproof polyester poncho with an integrated hood, ideal for rainy days. One size fits all.',
+   'A folded yellow poncho lying on a light table, with the brand label visible in the corner.'),
+  ('22222222-2222-2222-2222-222222222222', 'pt-BR',
+   'Guarda-chuva automático compacto',
+   'Guarda-chuva de abertura automática, estrutura em fibra de vidro, cabe na mochila.',
+   'Guarda-chuva preto fechado apoiado em um fundo branco liso.'),
+  ('22222222-2222-2222-2222-222222222222', 'en-US',
+   'Compact automatic umbrella',
+   'Automatic-open umbrella with a fiberglass frame; fits inside a backpack.',
+   'A closed black umbrella standing against a plain white background.'),
+  ('33333333-3333-3333-3333-333333333333', 'pt-BR',
+   'Mochila antifurto impermeável',
+   'Mochila urbana com zíperes ocultos, compartimento para notebook de 15 polegadas.',
+   'Mochila cinza escura em pé, vista frontal, com dois zíperes horizontais visíveis.'),
+  ('33333333-3333-3333-3333-333333333333', 'en-US',
+   'Anti-theft waterproof backpack',
+   'Urban backpack with hidden zippers and a 15-inch laptop compartment.',
+   'A dark gray backpack standing upright, front view, with two horizontal zippers visible.'),
+  ('44444444-4444-4444-4444-444444444444', 'pt-BR',
+   'Fone de ouvido Bluetooth com microfone',
+   'Fone over-ear com cancelamento de ruído e 30 horas de bateria.',
+   'Fone de ouvido preto over-ear com haste ajustável sobre fundo neutro.'),
+  ('44444444-4444-4444-4444-444444444444', 'en-US',
+   'Bluetooth headphones with microphone',
+   'Over-ear headphones with noise cancelling and 30-hour battery life.',
+   'Black over-ear headphones with an adjustable headband on a neutral background.'),
+  ('55555555-5555-5555-5555-555555555555', 'pt-BR',
+   'Garrafa térmica de aço inox 750 ml',
+   'Mantém bebidas quentes por 12 horas e frias por 24 horas.',
+   'Garrafa térmica azul-metálica fechada em pé sobre uma superfície de madeira.'),
+  ('55555555-5555-5555-5555-555555555555', 'en-US',
+   'Stainless steel thermal bottle 750 ml',
+   'Keeps drinks hot for 12 hours and cold for 24 hours.',
+   'A closed metallic blue thermal bottle standing on a wooden surface.'),
+  ('66666666-6666-6666-6666-666666666666', 'pt-BR',
+   'Luminária de mesa LED com regulagem',
+   'Luminária com 3 tons de luz e braço articulado, alimentação por USB.',
+   'Luminária de mesa branca com braço dobrado, acesa, sobre uma escrivaninha.'),
+  ('66666666-6666-6666-6666-666666666666', 'en-US',
+   'Adjustable LED desk lamp',
+   'Desk lamp with 3 light tones and an articulated arm, USB powered.',
+   'A white desk lamp with a bent arm, switched on, on top of a desk.')
+ON CONFLICT (product_id, locale) DO NOTHING;
