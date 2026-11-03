@@ -1,0 +1,50 @@
+{
+  "siteTitle": "會說話的店面",
+  "siteTagline": "無障礙電商，商品圖片說明由開源 AI 生成",
+  "skipLink": "跳至主要內容",
+  "language": {
+    "label": "語言",
+    "changed": "語言已切換為{{name}}。"
+  },
+  "blindMode": {
+    "toggle": "無視覺體驗",
+    "onAnnouncement": "無視覺體驗已開啟：圖片已隱藏。仍可使用鍵盤導覽。",
+    "offAnnouncement": "無視覺體驗已關閉：圖片重新顯示。"
+  },
+  "products": {
+    "title": "商品",
+    "loading": "正在載入商品…",
+    "details": "查看{{name}}的詳細資訊"
+  },
+  "search": {
+    "label": "搜尋商品",
+    "submit": "搜尋",
+    "status": "「{{query}}」的搜尋結果有 {{total}} 筆。",
+    "noResults": "找不到「{{query}}」的結果。",
+    "error": "搜尋失敗，請再試一次。"
+  },
+  "dialog": {
+    "close": "關閉",
+    "descriptionLabel": "商品描述"
+  },
+  "demo": {
+    "title": "示範：AI 產生 alt-text",
+    "pickImage": "選擇商品圖片",
+    "submit": "產生描述",
+    "noFile": "請先選擇圖片檔案再產生描述。",
+    "generating": "正在以 AI 產生描述…可能需要幾秒鐘。",
+    "ready": "描述已完成！",
+    "error": "目前無法產生描述，請再試一次。",
+    "altFor": "{{locale}} 的 alt-text",
+    "listen": "以{{locale}}朗讀",
+    "speechFallback": "此裝置沒有{{locale}}的語音。文字仍會顯示在畫面上。",
+    "ocr": "圖片中找到的文字"
+  },
+  "app": {
+    "loadError": "無法載入商品目錄。請檢查網路連線後重新載入頁面。"
+  },
+  "footer": {
+    "architectedBy": "架構設計：Eliezer Tavares de Oliveira",
+    "tagline": "無障礙是優先事項，而非附加功能 — WCAG 2.2 AA"
+  }
+}

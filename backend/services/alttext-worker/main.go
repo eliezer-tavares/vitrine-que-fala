@@ -1,91 +1,144 @@
+// alttext-worker consumes the images.pending queue and fills per-locale
+// alt-text + embeddings. v2.0: talks to the catalog over gRPC (ADR-0007),
+// consumes through the broker interface (Redis Streams locally, Google
+// Pub/Sub when BROKER=pubsub — ADR-0008) and indexes embeddings for
+// semantic search (ADR-0009).
 package main
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/redis/go-redis/v9"
+	"github.com/eliezer-tavares/vitrine-que-fala/backend/internal/broker"
+	"github.com/eliezer-tavares/vitrine-que-fala/backend/internal/obs"
 )
 
-// PGStore writes per-locale alt-text into product_translations (ADR-0001).
-type PGStore struct {
-	DB *pgxpool.Pool
+const serviceName = "alttext-worker"
+
+func env(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
 }
 
-func (s *PGStore) SetAltText(ctx context.Context, productID string, alt map[string]string) error {
-	for loc, txt := range alt {
-		ct, err := s.DB.Exec(ctx,
-			`UPDATE product_translations SET alt_text = $3 WHERE product_id = $1 AND locale = $2`,
-			productID, loc, txt)
-		if err != nil {
-			return err
-		}
-		if ct.RowsAffected() == 0 {
-			log.Printf("alttext-worker: no translation row for product %s locale %s", productID, loc)
+func envInt(key string, def int) int {
+	if v := os.Getenv(key); v != "" {
+		var n int
+		if _, err := fmt.Sscanf(v, "%d", &n); err == nil {
+			return n
 		}
 	}
-	return nil
+	return def
 }
 
 func main() {
+	obs.Init(serviceName)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-
-	pool, err := pgxpool.New(ctx, env("DATABASE_URL", "postgres://vitrine:vitrine-dev@db:5432/vitrine"))
-	if err != nil {
-		log.Fatalf("alttext-worker: postgres: %v", err)
-	}
-	defer pool.Close()
 
 	stream := env("IMAGES_STREAM", "images.pending")
 	group := env("GROUP", "alttext-workers")
 	dead := env("DEAD_STREAM", "images.dead")
 	workers := envInt("WORKERS", 4)
 
-	host, _ := os.Hostname()
-	rdb := redis.NewClient(&redis.Options{Addr: env("REDIS_ADDR", "redis:6379")})
+	ai := NewHTTPAIClient(env("AI_SERVICE_URL", "http://ai:8083"))
+	catalog, err := NewCatalogClient(env("GRPC_CATALOG_ADDR", "catalog:9081"))
+	if err != nil {
+		slog.Error("catalog grpc client failed", "error", err)
+		os.Exit(1)
+	}
 
+	// One subscriber (consumer identity) per goroutine — the same model the
+	// Redis consumer groups used, now broker-agnostic.
+	host, _ := os.Hostname()
 	for i := 0; i < workers; i++ {
 		i := i
-		q := &RedisQueue{R: rdb, Consumer: fmt.Sprintf("%s-%d", host, i)}
-		if err := q.EnsureGroup(ctx, stream, group); err != nil {
-			log.Fatalf("alttext-worker: ensure group: %v", err)
+		consumer := fmt.Sprintf("%s-%d", host, i)
+
+		sub, err := broker.NewSubscriber(ctx, consumer)
+		if err != nil {
+			slog.Error("broker subscriber failed", "error", err)
+			os.Exit(1)
 		}
+		if err := sub.EnsureGroup(ctx, stream, group); err != nil {
+			slog.Error("ensure consumer group failed", "error", err)
+			os.Exit(1)
+		}
+
 		p := &Processor{
-			AI:          NewHTTPAIClient(env("AI_SERVICE_URL", "http://ai:8083")),
-			Store:       &PGStore{DB: pool},
-			Queue:       q,
+			AI:          ai,
+			Embedder:    ai, // the same service serves /describe and /embed
+			Store:       catalog,
+			Queue:       sub,
 			Stream:      stream,
 			Group:       group,
 			DeadStream:  dead,
 			MaxAttempts: envInt("MAX_ATTEMPTS", 3),
 		}
 		go func() {
-			log.Printf("alttext-worker goroutine %d (%s) started", i, q.Consumer)
-			runLoop(ctx, q, p, stream, group)
+			slog.Info("worker goroutine started", "index", i, "consumer", consumer)
+			runLoop(ctx, sub, p, stream, group)
 		}()
 	}
 
-	// Tiny health endpoint so orchestration can probe the worker.
+	// Health + metrics endpoint so orchestration can probe the worker.
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
+	mux.Handle("/metrics", obs.MetricsHandler())
 	srv := &http.Server{Addr: ":" + env("PORT", "8084"), Handler: mux}
 	go func() {
 		<-ctx.Done()
 		_ = srv.Close()
 	}()
-	log.Printf("alttext-worker running with %d goroutines, health on :%s", workers, env("PORT", "8084"))
+	port := env("PORT", "8084")
+	slog.Info("worker running", "goroutines", workers, "health_port", port)
 	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Fatal(err)
+		slog.Error("health server failed", "error", err)
+		os.Exit(1)
+	}
+}
+
+// runLoop is one worker goroutine: block-read, process, repeat, until ctx is
+// done. Storage failures are logged and left pending for redelivery.
+func runLoop(ctx context.Context, sub broker.Subscriber, p *Processor, stream, group string) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+		msgs, err := sub.Read(ctx, stream, group, 1)
+		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
+			slog.Warn("worker read failed; backing off", "error", err)
+			sleepOneSecond(ctx)
+			continue
+		}
+		for _, m := range msgs {
+			if err := p.Handle(ctx, m); err != nil {
+				slog.Warn("worker handle failed; message stays pending", "error", err)
+				sleepOneSecond(ctx)
+			}
+		}
+	}
+}
+
+func sleepOneSecond(ctx context.Context) {
+	select {
+	case <-ctx.Done():
+	case <-time.After(time.Second):
 	}
 }

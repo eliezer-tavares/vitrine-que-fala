@@ -22,6 +22,14 @@ export interface AltTextResponse {
   ocr_text: string[];
 }
 
+export interface SearchResponse {
+  locale: string;
+  query: string;
+  /** "semantic" (pgvector) or "lexical" (ILIKE fallback) — ADR-0009. */
+  strategy: string;
+  items: Product[];
+}
+
 const BASE: string = import.meta.env.VITE_API_URL ?? "/api/v1";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -37,6 +45,13 @@ export const api = {
     return request<ProductListResponse>("/products", {
       headers: { "Accept-Language": locale },
     });
+  },
+
+  searchProducts(query: string, locale: string): Promise<SearchResponse> {
+    return request<SearchResponse>(
+      `/search?q=${encodeURIComponent(query)}`,
+      { headers: { "Accept-Language": locale } },
+    );
   },
 
   async altText(file: File, locale: string): Promise<AltTextResponse> {

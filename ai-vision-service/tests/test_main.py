@@ -1,8 +1,8 @@
 """Contract tests for ai-vision-service.
 
-The pipeline dependency is overridden with a fake, so these tests need no
-model weights, no Tesseract and no network — they validate the API contract
-that the gateway, the Go worker and the storefront rely on.
+The pipeline and embedder dependencies are overridden with fakes, so these
+tests need no model weights, no Tesseract and no network — they validate the
+API contract that the gateway, the Go worker and the storefront rely on.
 """
 from __future__ import annotations
 
@@ -12,15 +12,14 @@ from fastapi.testclient import TestClient
 from app.main import app, get_pipeline
 from app.vision import SUPPORTED_LOCALES, StubPipeline
 
+EXPECTED_LOCALES = {"pt-BR", "en-US", "id-ID", "th-TH", "vi-VN", "zh-TW"}
+
 
 class FakePipeline:
     """Deterministic pipeline used to pin the API contract."""
 
     def describe(self, image: bytes) -> dict[str, str]:
-        return {
-            "pt-BR": f"Descrição de teste ({len(image)} bytes).",
-            "en-US": f"Test description ({len(image)} bytes).",
-        }
+        return {loc: f"Descrição de teste ({loc})" for loc in SUPPORTED_LOCALES}
 
     def ocr(self, image: bytes) -> list[str]:
         return ["BRAND X", "50% OFF"] if image else []
@@ -48,17 +47,23 @@ def test_healthz(client):
     assert resp.json() == {"status": "ok"}
 
 
-def test_describe_returns_both_locales_and_ocr(client):
+def test_metrics_exposes_prometheus_format(client):
+    resp = client.get("/metrics")
+    assert resp.status_code == 200
+    assert "python_info" in resp.text
+
+
+def test_describe_returns_all_six_locales_and_ocr(client):
     resp = client.post(
         "/describe",
         files={"image": ("product.jpg", b"fakejpegbytes", "image/jpeg")},
     )
     assert resp.status_code == 200
     body = resp.json()
-    assert set(body["alt_texts"].keys()) == {"pt-BR", "en-US"}
-    assert set(SUPPORTED_LOCALES) == {"pt-BR", "en-US"}
-    assert body["alt_texts"]["pt-BR"].startswith("Descrição de teste")
-    assert body["alt_texts"]["en-US"].startswith("Test description")
+    assert set(body["alt_texts"].keys()) == EXPECTED_LOCALES
+    assert set(SUPPORTED_LOCALES) == EXPECTED_LOCALES
+    for loc in EXPECTED_LOCALES:
+        assert body["alt_texts"][loc].startswith("Descrição de teste")
     assert body["ocr_text"] == ["BRAND X", "50% OFF"]
 
 
@@ -90,9 +95,9 @@ def test_describe_degrades_to_503_on_pipeline_failure():
     app.dependency_overrides.clear()
 
 
-def test_stub_pipeline_is_deterministic_and_bilingual():
+def test_stub_pipeline_is_deterministic_and_six_locale():
     stub = StubPipeline()
     alt = stub.describe(b"abc")
-    assert set(alt.keys()) == {"pt-BR", "en-US"}
+    assert set(alt.keys()) == EXPECTED_LOCALES
     assert stub.describe(b"abc") == alt
     assert stub.ocr(b"abc") == []

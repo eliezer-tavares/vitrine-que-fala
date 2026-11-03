@@ -3,6 +3,38 @@
 All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [v2.0] — 2026
+
+The complete release: six locales as data, gRPC mesh, Pub/Sub behind the
+broker interface, multilingual semantic search, load-test harness and
+observability — still 100% open source, still sized for an 8 GB notebook.
+
+### Added
+- **Six locales** (pt-BR, en-US, id-ID, th-TH, vi-VN, zh-TW) everywhere — catalog translations, receipts, storefront UI, Web Speech, OCR — added as **data, not code** (seed 002 + i18n JSONs; ADR-0003).
+- **Per-market currencies**: IDR (Rp), THB (฿), VND (₫), TWD (NT$) with zero-decimal and suffix conventions; storefront formats via `Intl` (ADR-0012).
+- **gRPC internal mesh** (ADR-0007): `backend/api/proto/vitrine.proto` with committed generated stubs; catalog/order serve dual HTTP+gRPC; the gateway reads via gRPC; the worker writes alt-text/embeddings via gRPC and no longer touches PostgreSQL.
+- **Google Pub/Sub behind the broker interface** (ADR-0008): `BROKER=redis|pubsub`, shared topic names, emulator support; Redis Streams remains the local default.
+- **Multilingual semantic search** (ADR-0009): pgvector + HNSW on `product_translations`, `POST /embed` (multilingual-e5-small, lazy; deterministic stub for CI), worker indexes embeddings best-effort, `GET /api/v1/search` reports `strategy: semantic|lexical`.
+- **Load-test harness** (ADR-0011): k6 scripts for browse/search/checkout with thresholds and an honest, empty results table (`docs/LOAD-TESTING.md`).
+- **Observability** (ADR-0010): slog JSON + `vitrine_http_*` Prometheus metrics on every service, optional compose profile with Prometheus + Grafana, `docs/OBSERVABILITY.md`.
+- **Search in the storefront**: one search box works in all six locales, announces result counts via `aria-live`.
+- ADR-0007..0012; `docs/LOAD-TESTING.md`; `docs/OBSERVABILITY.md`.
+
+### Changed
+- ai-vision-service: composed pipeline translates en→{pt,id,th,vi,zh} via per-pair lazy Opus-MT; zh-TW gets optional OpenCC s2t conversion; Tesseract reads all six scripts; `/metrics` endpoint; version 2.0.0.
+- Playwright E2E and vitest axe scans now cover all six locales (including blind mode); keyboard E2E exercises a Thai switch.
+- Seed ships per-market products (batik tote in IDR, Thai silk scarf in THB, nón lá in VND, bubble-tea cup in TWD) translated in all six locales.
+- docker-compose uses the pgvector Postgres image and wires the gRPC ports, `BROKER` and `EMBEDDER` env vars.
+
+### Accessibility
+- axe-core runs in CI against the page in **all six locales**, home and blind mode; violations fail the build.
+- Search results and failures announce through polite `aria-live` regions — silence is treated as a bug.
+- Receipts and order errors localized in six languages (lookup tables with en-US fallback).
+
+### Compatibility
+- The REST edge stays compatible with v1.0 clients; gRPC is internal-only.
+- `X-Client-Locale` header behavior unchanged; `Accept-Language` now resolves six locales (th-TH no longer falls back to en-US).
+
 ## [v1.0] — 2026
 
 First public release. Bilingual (pt-BR / en-US) accessibility-first MVP.
@@ -24,4 +56,5 @@ First public release. Bilingual (pt-BR / en-US) accessibility-first MVP.
 - Blind-mode toggle uses `aria-pressed`; async alt-text generation announces progress via polite `aria-live`.
 
 ## [Unreleased]
-- v2.0: six locales as data (id-ID, th-TH, vi-VN, zh-TW), gRPC between services, Google Pub/Sub behind the broker interface, multilingual semantic search with multilingual-e5 + pgvector, k6 load-test numbers, per-market currencies.
+- Cloud Run first deployment with published k6 numbers (fill `docs/LOAD-TESTING.md`).
+- OpenTelemetry tracing across the gRPC mesh; alerting rules for the metric inventory.

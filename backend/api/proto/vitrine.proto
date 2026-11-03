@@ -1,0 +1,103 @@
+// Vitrine que Fala — internal service contracts (v2.0).
+//
+// ADR-0007: gRPC is the transport BETWEEN the Go services (gateway ->
+// catalog/order, worker -> catalog). The edge stays HTTP for browsers, and
+// multipart uploads (product images) remain HTTP end-to-end. Generated stubs
+// are committed under backend/gen so builds never require protoc; regenerate
+// with `make proto`.
+syntax = "proto3";
+
+package vitrine.v1;
+
+option go_package = "github.com/eliezer-tavares/vitrine-que-fala/backend/gen/vitrine;vitrine";
+
+// Price is the localized money view (mirrors the REST payload).
+message Price {
+  int64 minor_units = 1;
+  string currency = 2;
+  string formatted = 3;
+}
+
+// Product is the localized catalog view.
+message Product {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string alt_text = 4;
+  Price price = 5;
+}
+
+message ListProductsRequest {
+  string locale = 1;
+}
+message ListProductsResponse {
+  string locale = 1;
+  repeated Product items = 2;
+}
+
+message GetProductRequest {
+  string locale = 1;
+  string id = 2;
+}
+message GetProductResponse {
+  Product product = 1;
+}
+
+message SearchProductsRequest {
+  string locale = 1;
+  string query = 2;
+  int32 limit = 3;
+}
+message SearchProductsResponse {
+  string locale = 1;
+  repeated Product items = 2;
+  // "semantic" (pgvector cosine) or "lexical" (ILIKE fallback) — surfaced so
+  // clients and load tests can tell which path answered (ADR-0009).
+  string strategy = 3;
+}
+
+// UpdateAltText persists per-locale alt-text produced by alttext-worker.
+message UpdateAltTextRequest {
+  string product_id = 1;
+  map<string, string> alt_texts = 2;
+}
+message UpdateAltTextResponse {}
+
+// UpdateEmbedding persists a 384-dim multilingual-e5 vector for one
+// (product, locale) translation row (ADR-0009).
+message UpdateEmbeddingRequest {
+  string product_id = 1;
+  string locale = 2;
+  repeated float vector = 3;
+}
+message UpdateEmbeddingResponse {}
+
+service CatalogService {
+  rpc ListProducts(ListProductsRequest) returns (ListProductsResponse);
+  rpc GetProduct(GetProductRequest) returns (GetProductResponse);
+  rpc SearchProducts(SearchProductsRequest) returns (SearchProductsResponse);
+  rpc UpdateAltText(UpdateAltTextRequest) returns (UpdateAltTextResponse);
+  rpc UpdateEmbedding(UpdateEmbeddingRequest) returns (UpdateEmbeddingResponse);
+}
+
+message OrderItem {
+  string product_id = 1;
+  int32 quantity = 2;
+}
+
+// CreateOrder carries the authenticated subject and the negotiated locale;
+// the gateway fills both (it stays the single trust boundary).
+message CreateOrderRequest {
+  repeated OrderItem items = 1;
+  string subject = 2;
+  string locale = 3;
+}
+message CreateOrderResponse {
+  string order_id = 1;
+  string locale = 2;
+  string message = 3;
+}
+
+service OrderService {
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+}

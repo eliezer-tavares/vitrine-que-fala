@@ -27,6 +27,20 @@ vi.mock("../api", () => ({
         },
       ],
     })),
+    searchProducts: vi.fn(async () => ({
+      locale: "pt-BR",
+      query: "poncho",
+      strategy: "semantic",
+      items: [
+        {
+          id: "11111111-1111-1111-1111-111111111111",
+          name: "Poncho impermeável",
+          description: "Poncho de poliéster com capuz",
+          alt_text: "Poncho amarelo dobrado sobre uma mesa clara",
+          price: { minor_units: 7900, currency: "BRL", formatted: "R$ 79,00" },
+        },
+      ],
+    })),
     altText: vi.fn(),
   },
 }));
@@ -88,6 +102,40 @@ describe("App", () => {
     await user.click(
       await screen.findByRole("button", { name: /ver detalhes de poncho/i }),
     );
+    const results = await axe.run(container, { resultTypes: ["violations"] });
+    expect(results.violations).toEqual([]);
+  });
+
+  it("searches in the current locale and announces the result count", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByText("Poncho impermeável");
+
+    await user.type(
+      screen.getByRole("searchbox", { name: /buscar produtos/i }),
+      "poncho",
+    );
+    await user.click(screen.getByRole("button", { name: "Buscar" }));
+
+    expect(
+      await screen.findByText(/1 resultado\(s\) para "poncho"/i),
+    ).toBeInTheDocument();
+  });
+
+  // v2.0: accessibility must hold in EVERY supported locale, not just the
+  // v1.0 pair — non-Latin scripts are where lang/font/contrast bugs hide.
+  it("has no axe violations in th-TH", async () => {
+    await i18n.changeLanguage("th-TH");
+    const { container } = render(<App />);
+    await screen.findByRole("heading", { name: /หน้าร้านที่พูดได้/ });
+    const results = await axe.run(container, { resultTypes: ["violations"] });
+    expect(results.violations).toEqual([]);
+  });
+
+  it("has no axe violations in zh-TW", async () => {
+    await i18n.changeLanguage("zh-TW");
+    const { container } = render(<App />);
+    await screen.findByRole("heading", { name: /會說話的店面/ });
     const results = await axe.run(container, { resultTypes: ["violations"] });
     expect(results.violations).toEqual([]);
   });

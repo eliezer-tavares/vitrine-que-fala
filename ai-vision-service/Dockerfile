@@ -26,7 +26,8 @@ RUN if [ "$WITH_FLORENCE" = "true" ]; then \
 COPY app ./app
 
 ENV PIPELINE=stub \
-    TESSERACT_LANGS=por+eng \
+    EMBEDDER=stub \
+    TESSERACT_LANGS=por+eng+ind+tha+vie+chi_tra \
     PYTHONUNBUFFERED=1
 
 EXPOSE 8083

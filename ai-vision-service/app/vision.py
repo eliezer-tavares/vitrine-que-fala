@@ -1,4 +1,4 @@
-"""Vision pipelines (ADR-0002 and ADR-0005).
+"""Vision pipelines (ADR-0002, ADR-0005, ADR-0009).
 
 Two implementations behind one protocol:
 
@@ -6,8 +6,13 @@ Two implementations behind one protocol:
   demos and smoke tests so the platform never depends on model downloads.
 - ``FlorencePipeline``: 100% open-source models, **lazy-loaded** so an
   8 GB RAM machine only pays for weights when a job actually runs:
-  Florence-2-base captions the image in English, Opus-MT translates to
-  pt-BR, Tesseract extracts embedded text (por+eng).
+  Florence-2-base captions the image in English, one Opus-MT pair per
+  target locale translates it (en->pt, en->id, en->th, en->vi, en->zh),
+  Tesseract extracts embedded text.
+
+v2.0 serves six locales — the Shopee-market footprint (ADR-0003). The
+caption+translate composition is what keeps the pipeline inside the 8 GB
+budget: no multilingual VLM is ever loaded.
 """
 from __future__ import annotations
 
@@ -18,11 +23,24 @@ from typing import Protocol, runtime_checkable
 
 logger = logging.getLogger("ai-vision")
 
-# v1.0 locales. v2.0 adds id-ID, th-TH, vi-VN, zh-TW (data, not code — ADR-0001).
-SUPPORTED_LOCALES = ["pt-BR", "en-US"]
+# v2.0 locales: Brazil + the largest Shopee markets. Adding a locale is
+# data (seed + i18n JSON + one Opus-MT pair here), never a schema change.
+SUPPORTED_LOCALES = ["pt-BR", "en-US", "id-ID", "th-TH", "vi-VN", "zh-TW"]
 
 FLORENCE_MODEL = "microsoft/Florence-2-base"
-OPUS_MT_EN_PT = "Helsinki-NLP/opus-mt-en-pt"
+
+# One open-source translation pair per locale, loaded lazily and one at a
+# time (~300 MB each) so RAM usage tracks the markets actually serving.
+OPUS_MT_PAIRS: dict[str, str] = {
+    "pt-BR": "Helsinki-NLP/opus-mt-en-pt",
+    "id-ID": "Helsinki-NLP/opus-mt-en-id",
+    "th-TH": "Helsinki-NLP/opus-mt-en-th",
+    "vi-VN": "Helsinki-NLP/opus-mt-en-vi",
+    "zh-TW": "Helsinki-NLP/opus-mt-en-zh",
+}
+
+# Default Tesseract packs for v2.0 (the Docker image ships them all).
+DEFAULT_TESSERACT_LANGS = "por+eng+ind+tha+vie+chi_tra"
 
 
 @runtime_checkable
@@ -39,35 +57,63 @@ class VisionPipeline(Protocol):
 
 
 class StubPipeline:
-    """Deterministic pipeline for CI/demo. Produces a valid alt-text for both
-    locales without loading any model."""
+    """Deterministic pipeline for CI/demo. Produces a valid alt-text for all
+    six locales without loading any model."""
+
+    _DEMO: dict[str, str] = {
+        "pt-BR": (
+            "Imagem de produto (modo demonstração, {size} bytes): "
+            "substitua o PIPELINE=stub por florence para gerar descrições reais."
+        ),
+        "en-US": (
+            "Product image (demo mode, {size} bytes): switch PIPELINE=stub "
+            "to florence to generate real descriptions."
+        ),
+        "id-ID": (
+            "Gambar produk (mode demo, {size} byte): ganti PIPELINE=stub "
+            "menjadi florence untuk menghasilkan deskripsi nyata."
+        ),
+        "th-TH": (
+            "รูปภาพสินค้า (โหมดสาธิต, {size} ไบต์): เปลี่ยน PIPELINE=stub "
+            "เป็น florence เพื่อสร้างคำอธิบายจริง"
+        ),
+        "vi-VN": (
+            "Ảnh sản phẩm (chế độ demo, {size} byte): đổi PIPELINE=stub "
+            "thành florence để tạo mô tả thật."
+        ),
+        "zh-TW": (
+            "商品圖片（示範模式，{size} 位元組）："
+            "將 PIPELINE=stub 改為 florence 以產生真實描述。"
+        ),
+    }
 
     def describe(self, image: bytes) -> dict[str, str]:
         size = len(image)
-        return {
-            "pt-BR": (
-                f"Imagem de produto (modo demonstração, {size} bytes): "
-                "substitua o PIPELINE=stub por florence para gerar descrições reais."
-            ),
-            "en-US": (
-                f"Product image (demo mode, {size} bytes): switch PIPELINE=stub "
-                "to florence to generate real descriptions."
-            ),
-        }
+        return {loc: tpl.format(size=size) for loc, tpl in self._DEMO.items()}
 
     def ocr(self, image: bytes) -> list[str]:
         return []
 
 
 class FlorencePipeline:
-    """Composed open-source pipeline under the 8 GB RAM budget (ADR-0005)."""
+    """Composed open-source pipeline under the 8 GB RAM budget (ADR-0005).
 
-    def __init__(self, ocr_langs: str = "por+eng", device: str = "cpu") -> None:
+    The translators dict is the v2.0 change: one Opus-MT pair per locale,
+    each lazy-loaded and released to the OS page cache when unused. For
+    zh-TW the en->zh output is converted to Traditional characters with
+    OpenCC when the optional dependency is installed (ADR-0009 notes the
+    trade-off; the stub pipeline stays dependency-free either way).
+    """
+
+    def __init__(
+        self, ocr_langs: str = DEFAULT_TESSERACT_LANGS, device: str = "cpu"
+    ) -> None:
         self._ocr_langs = ocr_langs
         self._device = device
         self._caption_model = None
         self._caption_processor = None
-        self._translator = None
+        self._translators: dict[str, tuple[object, object]] = {}
+        self._opencc = None
 
     # -- lazy loading -----------------------------------------------------
     def _load_caption(self):
@@ -83,16 +129,35 @@ class FlorencePipeline:
             ).to(self._device)
         return self._caption_processor, self._caption_model
 
-    def _load_translator(self):
-        if self._translator is None:
+    def _load_translator(self, locale: str):
+        if locale not in self._translators:
             from transformers import MarianMTModel, MarianTokenizer
 
-            logger.info("loading %s (first use)", OPUS_MT_EN_PT)
-            self._translator = MarianMTModel.from_pretrained(OPUS_MT_EN_PT).to(
-                self._device
-            )
-            self._translator_tokenizer = MarianTokenizer.from_pretrained(OPUS_MT_EN_PT)
-        return self._translator, self._translator_tokenizer
+            model_name = OPUS_MT_PAIRS[locale]
+            logger.info("loading %s (first use for %s)", model_name, locale)
+            model = MarianMTModel.from_pretrained(model_name).to(self._device)
+            tokenizer = MarianTokenizer.from_pretrained(model_name)
+            self._translators[locale] = (model, tokenizer)
+        return self._translators[locale]
+
+    def _load_opencc(self):
+        """Optional simplified->traditional conversion for zh-TW."""
+        if self._opencc is None:
+            try:
+                from opencc import OpenCC  # opencc-python-reimplemented
+
+                self._opencc = OpenCC("s2t")
+            except Exception:  # noqa: BLE001 — conversion is best-effort
+                logger.warning(
+                    "opencc unavailable; zh-TW text stays as produced by en->zh"
+                )
+                class _Identity:
+                    @staticmethod
+                    def convert(text: str) -> str:
+                        return text
+
+                self._opencc = _Identity()
+        return self._opencc
 
     # -- pipeline ---------------------------------------------------------
     def _caption_en(self, rgb_image) -> str:
@@ -111,21 +176,26 @@ class FlorencePipeline:
             )
         return processor.batch_decode(generated, skip_special_tokens=True)[0].strip()
 
-    def _translate_pt(self, text: str) -> str:
+    def _translate(self, text: str, locale: str) -> str:
         import torch
 
-        model, tokenizer = self._load_translator()
+        if locale == "en-US":
+            return text
+        model, tokenizer = self._load_translator(locale)
         batch = tokenizer([text], return_tensors="pt", padding=True).to(self._device)
         with torch.no_grad():
             generated = model.generate(**batch)
-        return tokenizer.batch_decode(generated, skip_special_tokens=True)[0].strip()
+        out = tokenizer.batch_decode(generated, skip_special_tokens=True)[0].strip()
+        if locale == "zh-TW":
+            out = self._load_opencc().convert(out)
+        return out
 
     def describe(self, image: bytes) -> dict[str, str]:
         from PIL import Image
 
         rgb = Image.open(io.BytesIO(image)).convert("RGB")
         en = self._caption_en(rgb)
-        return {"en-US": en, "pt-BR": self._translate_pt(en)}
+        return {loc: self._translate(en, loc) for loc in SUPPORTED_LOCALES}
 
     def ocr(self, image: bytes) -> list[str]:
         try:
@@ -147,7 +217,9 @@ def build_pipeline() -> VisionPipeline:
     choice = os.getenv("PIPELINE", "stub").strip().lower()
     if choice == "florence":
         try:
-            return FlorencePipeline(ocr_langs=os.getenv("TESSERACT_LANGS", "por+eng"))
+            return FlorencePipeline(
+                ocr_langs=os.getenv("TESSERACT_LANGS", DEFAULT_TESSERACT_LANGS)
+            )
         except Exception:
             logger.exception("florence pipeline unavailable; falling back to stub")
             return StubPipeline()

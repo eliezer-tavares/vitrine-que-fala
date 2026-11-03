@@ -1,0 +1,95 @@
+warning: in the working copy of '.env.example', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'CHANGELOG.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Makefile', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'README.pt-BR.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-vision-service/Dockerfile', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-vision-service/app/__init__.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-vision-service/app/main.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-vision-service/app/schemas.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-vision-service/app/vision.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-vision-service/requirements-florence.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-vision-service/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-vision-service/tests/test_main.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/go.mod', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/go.sum', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/internal/currency/currency.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/internal/currency/currency_test.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/internal/locale/locale.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/internal/locale/locale_test.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/services/alttext-worker/aiclient.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/services/alttext-worker/main.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/services/alttext-worker/pool_test.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/services/alttext-worker/processor.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/services/api-gateway/main.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/services/api-gateway/main_test.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/services/catalog/handlers.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/services/catalog/handlers_test.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/services/catalog/main.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/services/catalog/repo.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/services/order/handlers.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/services/order/main.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docker-compose.yml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/ACCESSIBILITY.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/RAM-BUDGET.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/SETUP.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/openapi/gateway.openapi.yaml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'web/e2e/a11y.spec.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'web/e2e/helpers.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'web/e2e/keyboard.spec.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'web/src/App.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'web/src/api.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'web/src/i18n.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'web/src/i18n/locales/en-US.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'web/src/i18n/locales/pt-BR.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'web/src/styles.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'web/src/tests/App.test.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'web/src/tests/LanguageSwitcher.test.tsx', LF will be replaced by CRLF the next time Git touches it
+ .env.example                                 |  24 [32m++[m[31m-[m
+ CHANGELOG.md                                 |  35 [32m++[m[31m-[m
+ Makefile                                     |  54 [32m+++[m[31m--[m
+ README.md                                    |  80 [32m+++[m[31m----[m
+ README.pt-BR.md                              |  80 [32m+++[m[31m----[m
+ ai-vision-service/Dockerfile                 |   3 [32m+[m[31m-[m
+ ai-vision-service/app/__init__.py            |   2 [32m+[m[31m-[m
+ ai-vision-service/app/main.py                |  56 [32m++++[m[31m-[m
+ ai-vision-service/app/schemas.py             |  24 [32m++[m[31m-[m
+ ai-vision-service/app/vision.py              | 142 [32m+++++++++[m[31m---[m
+ ai-vision-service/requirements-florence.txt  |   6 [32m+[m[31m-[m
+ ai-vision-service/requirements.txt           |   3 [32m+[m[31m-[m
+ ai-vision-service/tests/test_main.py         |  33 [32m+[m[31m--[m
+ backend/go.mod                               |  45 [32m+++[m[31m-[m
+ backend/go.sum                               | 224 [32m++++++++++++++++++[m[31m-[m
+ backend/internal/currency/currency.go        |  74 [32m++++++[m[31m-[m
+ backend/internal/currency/currency_test.go   |  11 [32m+[m[31m-[m
+ backend/internal/locale/locale.go            |  15 [32m+[m[31m-[m
+ backend/internal/locale/locale_test.go       |  10 [32m+[m[31m-[m
+ backend/services/alttext-worker/aiclient.go  |  35 [32m++[m[31m-[m
+ backend/services/alttext-worker/main.go      | 125 [32m+++++++[m[31m----[m
+ backend/services/alttext-worker/pool_test.go |  98 [32m++++++++[m[31m-[m
+ backend/services/alttext-worker/processor.go |  72 [32m+++++[m[31m--[m
+ backend/services/api-gateway/main.go         | 210 [32m++++++++++++++++[m[31m--[m
+ backend/services/api-gateway/main_test.go    | 309 [32m+++++++++++++++++++++++[m[31m----[m
+ backend/services/catalog/handlers.go         |  54 [32m+++[m[31m--[m
+ backend/services/catalog/handlers_test.go    |  85 [32m+++++++[m[31m-[m
+ backend/services/catalog/main.go             |  77 [32m+++++[m[31m--[m
+ backend/services/catalog/repo.go             |  65 [32m+++++[m[31m-[m
+ backend/services/order/handlers.go           | 107 [32m+++++++[m[31m---[m
+ backend/services/order/main.go               |  51 [32m++++[m[31m-[m
+ docker-compose.yml                           |  46 [32m+++[m[31m-[m
+ docs/ACCESSIBILITY.md                        |  39 [32m++[m[31m--[m
+ docs/RAM-BUDGET.md                           |  43 [32m++[m[31m--[m
+ docs/SETUP.md                                |  53 [32m++[m[31m---[m
+ docs/openapi/gateway.openapi.yaml            |  63 [32m+++++[m[31m-[m
+ web/e2e/a11y.spec.ts                         |   6 [32m+[m[31m-[m
+ web/e2e/helpers.ts                           |  98 [32m++++++[m[31m---[m
+ web/e2e/keyboard.spec.ts                     |  15 [32m++[m
+ web/src/App.tsx                              |   8 [32m+[m[31m-[m
+ web/src/api.ts                               |  15 [32m++[m
+ web/src/i18n.ts                              |  28 [32m++[m[31m-[m
+ web/src/i18n/locales/en-US.json              |   7 [32m+[m
+ web/src/i18n/locales/pt-BR.json              |   7 [32m+[m
+ web/src/styles.css                           |  33 [32m+++[m
+ web/src/tests/App.test.tsx                   |  48 [32m+++++[m
+ web/src/tests/LanguageSwitcher.test.tsx      |  37 [32m+++[m[31m-[m
+ 47 files changed, 2258 insertions(+), 497 deletions(-)

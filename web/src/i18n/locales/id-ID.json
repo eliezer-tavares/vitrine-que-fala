@@ -1,0 +1,50 @@
+{
+  "siteTitle": "Etalase yang Berbicara",
+  "siteTagline": "E-commerce aksesibel dengan alt-text yang dihasilkan AI open source",
+  "skipLink": "Lewati ke konten utama",
+  "language": {
+    "label": "Bahasa",
+    "changed": "Bahasa diubah ke {{name}}."
+  },
+  "blindMode": {
+    "toggle": "Pengalaman Tanpa Mata",
+    "onAnnouncement": "Pengalaman Tanpa Mata diaktifkan: gambar disembunyikan. Navigasi tetap menggunakan papan ketik.",
+    "offAnnouncement": "Pengalaman Tanpa Mata dimatikan: gambar kembali ditampilkan."
+  },
+  "products": {
+    "title": "Produk",
+    "loading": "Memuat produk…",
+    "details": "Lihat detail {{name}}"
+  },
+  "search": {
+    "label": "Cari produk",
+    "submit": "Cari",
+    "status": "{{total}} hasil untuk \"{{query}}\".",
+    "noResults": "Tidak ada hasil untuk \"{{query}}\".",
+    "error": "Pencarian gagal. Coba lagi."
+  },
+  "dialog": {
+    "close": "Tutup",
+    "descriptionLabel": "Deskripsi produk"
+  },
+  "demo": {
+    "title": "Demo: AI menghasilkan alt-text",
+    "pickImage": "Pilih gambar produk",
+    "submit": "Buat deskripsi",
+    "noFile": "Pilih berkas gambar sebelum membuat deskripsi.",
+    "generating": "Membuat deskripsi dengan AI… Ini bisa memakan waktu beberapa detik.",
+    "ready": "Deskripsi siap!",
+    "error": "Tidak dapat membuat deskripsi sekarang. Coba lagi.",
+    "altFor": "Alt-text dalam {{locale}}",
+    "listen": "Dengarkan dalam {{locale}}",
+    "speechFallback": "Suara tidak tersedia untuk {{locale}} di perangkat ini. Teks tetap tampil di layar.",
+    "ocr": "Teks ditemukan di gambar"
+  },
+  "app": {
+    "loadError": "Tidak dapat memuat katalog. Periksa koneksi Anda dan muat ulang halaman."
+  },
+  "footer": {
+    "architectedBy": "Diarsitekkan oleh Eliezer Tavares de Oliveira",
+    "tagline": "Aksesibilitas adalah prioritas, bukan fitur — WCAG 2.2 AA"
+  }
+}

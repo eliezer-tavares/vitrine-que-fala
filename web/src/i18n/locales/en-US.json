@@ -16,6 +16,13 @@
     "loading": "Loading products…",
     "details": "See details for {{name}}"
   },
+  "search": {
+    "label": "Search products",
+    "submit": "Search",
+    "status": "{{total}} result(s) for \"{{query}}\".",
+    "noResults": "No results for \"{{query}}\".",
+    "error": "Search failed. Please try again."
+  },
   "dialog": {
     "close": "Close",
     "descriptionLabel": "Product description"

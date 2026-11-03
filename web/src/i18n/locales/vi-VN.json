@@ -1,0 +1,50 @@
+{
+  "siteTitle": "Gian hàng biết nói",
+  "siteTagline": "Thương mại điện tử dễ tiếp cận với alt-text do AI mã nguồn mở tạo ra",
+  "skipLink": "Bỏ qua đến nội dung chính",
+  "language": {
+    "label": "Ngôn ngữ",
+    "changed": "Đã đổi ngôn ngữ sang {{name}}."
+  },
+  "blindMode": {
+    "toggle": "Trải nghiệm không cần mắt",
+    "onAnnouncement": "Trải nghiệm không cần mắt đã bật: hình ảnh bị ẩn. Vẫn điều hướng bằng bàn phím.",
+    "offAnnouncement": "Trải nghiệm không cần mắt đã tắt: hình ảnh quay lại hiển thị."
+  },
+  "products": {
+    "title": "Sản phẩm",
+    "loading": "Đang tải sản phẩm…",
+    "details": "Xem chi tiết {{name}}"
+  },
+  "search": {
+    "label": "Tìm sản phẩm",
+    "submit": "Tìm",
+    "status": "{{total}} kết quả cho \"{{query}}\".",
+    "noResults": "Không có kết quả cho \"{{query}}\".",
+    "error": "Tìm kiếm thất bại. Vui lòng thử lại."
+  },
+  "dialog": {
+    "close": "Đóng",
+    "descriptionLabel": "Mô tả sản phẩm"
+  },
+  "demo": {
+    "title": "Demo: AI tạo alt-text",
+    "pickImage": "Chọn ảnh sản phẩm",
+    "submit": "Tạo mô tả",
+    "noFile": "Hãy chọn tệp ảnh trước khi tạo mô tả.",
+    "generating": "Đang tạo mô tả bằng AI… Có thể mất vài giây.",
+    "ready": "Mô tả đã sẵn sàng!",
+    "error": "Không thể tạo mô tả lúc này. Vui lòng thử lại.",
+    "altFor": "Alt-text bằng {{locale}}",
+    "listen": "Nghe bằng {{locale}}",
+    "speechFallback": "Không có giọng đọc cho {{locale}} trên thiết bị này. Văn bản vẫn hiển thị trên màn hình.",
+    "ocr": "Văn bản tìm thấy trong ảnh"
+  },
+  "app": {
+    "loadError": "Không thể tải danh mục sản phẩm. Kiểm tra kết nối và tải lại trang."
+  },
+  "footer": {
+    "architectedBy": "Kiến trúc bởi Eliezer Tavares de Oliveira",
+    "tagline": "Khả năng tiếp cận là ưu tiên, không phải tính năng — WCAG 2.2 AA"
+  }
+}

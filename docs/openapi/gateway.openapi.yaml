@@ -1,13 +1,14 @@
 openapi: 3.0.3
 info:
-  title: Vitrine que Fala — Public API (v1.0)
+  title: Vitrine que Fala — Public API (v2.0)
   description: |
     Edge API served by api-gateway. Locale negotiation: clients send a standard
-    `Accept-Language` header; the gateway resolves it against supported locales
-    (pt-BR, en-US) with a fallback chain and forwards `X-Client-Locale`
-    downstream. Auth uses JWT bearer tokens issued by `/auth/token`.
+    `Accept-Language` header; the gateway resolves it against the six supported
+    locales (pt-BR, en-US, id-ID, th-TH, vi-VN, zh-TW) with a fallback chain.
+    Internal reads (catalog) and checkout travel over gRPC (backend/api/proto);
+    this file documents the public HTTP face.
     Architected by Eliezer Tavares de Oliveira.
-  version: 1.0.0
+  version: 2.0.0
   contact:
     name: Eliezer Tavares de Oliveira
     email: contact@eliezertavaresdeoliveira.com
@@ -17,6 +18,7 @@ servers:
 tags:
   - name: auth
   - name: catalog
+  - name: search
   - name: orders
   - name: ai
 paths:
@@ -83,6 +85,44 @@ paths:
                 $ref: "#/components/schemas/Product"
         "404":
           description: Not found (or no translation for the negotiated locale)
+  /search:
+    get:
+      tags: [search]
+      summary: Search products (semantic pgvector with lexical fallback)
+      description: |
+        Multilingual semantic search (ADR-0009): the query is embedded in the
+        same multilingual-e5 space as the catalog. When the embedder is
+        unavailable (or the locale row lacks embeddings), the request falls
+        back to lexical matching. The response always reports which strategy
+        answered.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+          example: poncho
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+        - $ref: "#/components/parameters/AcceptLanguage"
+      responses:
+        "200":
+          description: Search results with the answering strategy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  locale: { type: string, example: pt-BR }
+                  query: { type: string }
+                  strategy: { type: string, enum: [semantic, lexical] }
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Product"
+        "400":
+          description: Missing q parameter
   /orders:
     post:
       tags: [orders]
@@ -114,8 +154,9 @@ paths:
       summary: Generate alt-text for an image (multipart upload)
       description: |
         Returns per-locale alt-text plus OCR text extracted from the image.
-        v1.0 locales: pt-BR, en-US. Public in v1.0 to keep the recruiter demo
-        frictionless; protected in v2.0.
+        v2.0 locales: pt-BR, en-US, id-ID, th-TH, vi-VN, zh-TW. Public to keep
+        the recruiter demo frictionless (rate-limited at the edge in real
+        deployments).
       parameters:
         - $ref: "#/components/parameters/AcceptLanguage"
       requestBody:
@@ -151,7 +192,7 @@ components:
       name: Accept-Language
       in: header
       required: false
-      description: "RFC 5646 header; e.g. `en-US,en;q=0.9` or `th-TH,th;q=0.9,en;q=0.8` (falls back to en-US)"
+      description: "RFC 5646 header; the six supported locales are pt-BR, en-US, id-ID, th-TH, vi-VN and zh-TW. Example: `th-TH,th;q=0.9,en;q=0.8`"
       schema: { type: string }
       example: pt-BR,pt;q=0.9,en;q=0.8
   schemas:
@@ -206,10 +247,14 @@ components:
       properties:
         alt_texts:
           type: object
-          description: Alt-text per locale
+          description: Alt-text per locale (six in v2.0)
           properties:
             pt-BR: { type: string }
             en-US: { type: string }
+            id-ID: { type: string }
+            th-TH: { type: string }
+            vi-VN: { type: string }
+            zh-TW: { type: string }
         ocr_text:
           type: array
           items: { type: string }

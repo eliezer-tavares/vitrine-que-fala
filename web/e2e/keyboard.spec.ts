@@ -26,6 +26,21 @@ test("keyboard-only flow: skip link, language switch, blind mode, dialog", async
   ).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("lang", "en-US");
 
+  // v2.0: the Shopee-market locales are first-class — switching to Thai
+  // updates <html lang> and the visible content (WCAG 3.1.1/3.1.2).
+  await page
+    .getByRole("combobox", { name: /idioma|language/i })
+    .selectOption("th-TH");
+  await expect(
+    page.getByRole("heading", { name: /หน้าร้านที่พูดได้/ }),
+  ).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("lang", "th-TH");
+
+  // The search input is reachable and labeled in the current language.
+  await expect(
+    page.getByRole("searchbox", { name: /ค้นหาสินค้า|buscar produtos|search products/i }),
+  ).toBeVisible();
+
   // Blind-mode toggle is a keyboard-operable toggle button.
   const blindToggle = page.getByRole("button", {
     name: /no-eyes experience|experiência sem olhos/i,

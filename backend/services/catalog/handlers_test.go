@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -13,6 +14,7 @@ type fakeRepo struct {
 	items      []Product
 	byID       map[string]Product
 	lastLocale string
+	searched   bool
 	calls      int
 }
 
@@ -29,6 +31,12 @@ func (f *fakeRepo) Get(_ context.Context, id, loc string) (*Product, error) {
 		return &p, nil
 	}
 	return nil, ErrNotFound
+}
+
+func (f *fakeRepo) Search(_ context.Context, loc, _ string, _ int, _ []float64) ([]Product, error) {
+	f.lastLocale = loc
+	f.searched = true
+	return f.items, nil
 }
 
 type memCache struct {
@@ -203,8 +211,83 @@ type fakeQueuePublisher struct {
 	values map[string]any
 }
 
-func (f *fakeQueuePublisher) XAdd(_ context.Context, stream string, values map[string]any) error {
+func (f *fakeQueuePublisher) Publish(_ context.Context, stream string, values map[string]any) error {
 	f.stream = stream
 	f.values = values
 	return nil
+}
+
+func TestSearchUsesEmbedderAndReportsStrategy(t *testing.T) {
+	repo := &fakeRepo{items: ptProducts()}
+	h := &Handler{
+		Repo: repo,
+		Embedder: fakeEmbedderFunc(func(_ context.Context, texts []string) ([][]float64, error) {
+			return [][]float64{{1, 2, 3}}, nil
+		}),
+	}
+
+	req := httptest.NewRequest("GET", "/api/v1/search?q=poncho", nil)
+	req.Header.Set("Accept-Language", "pt-BR")
+	rec := httptest.NewRecorder()
+	h.Search(rec, req)
+
+	if rec.Code != 200 {
+		t.Fatalf("status = %d, body: %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), `"strategy":"semantic"`) {
+		t.Fatalf("semantic strategy expected, got: %s", rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), `"query":"poncho"`) {
+		t.Fatalf("query echo expected, got: %s", rec.Body.String())
+	}
+}
+
+func TestSearchEmbedderFailureFallsBackToLexical(t *testing.T) {
+	repo := &fakeRepo{items: ptProducts()}
+	h := &Handler{
+		Repo: repo,
+		Embedder: fakeEmbedderFunc(func(_ context.Context, _ []string) ([][]float64, error) {
+			return nil, errors.New("model loading")
+		}),
+	}
+
+	req := httptest.NewRequest("GET", "/api/v1/search?q=poncho", nil)
+	rec := httptest.NewRecorder()
+	h.Search(rec, req)
+
+	if rec.Code != 200 {
+		t.Fatalf("status = %d, body: %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), `"strategy":"lexical"`) {
+		t.Fatalf("lexical fallback expected, got: %s", rec.Body.String())
+	}
+}
+
+func TestSearchWithoutEmbedderIsLexical(t *testing.T) {
+	repo := &fakeRepo{items: ptProducts()}
+	h := &Handler{Repo: repo}
+
+	req := httptest.NewRequest("GET", "/api/v1/search?q=mochila", nil)
+	rec := httptest.NewRecorder()
+	h.Search(rec, req)
+
+	if !strings.Contains(rec.Body.String(), `"strategy":"lexical"`) {
+		t.Fatalf("lexical expected, got: %s", rec.Body.String())
+	}
+}
+
+func TestSearchRequiresQuery(t *testing.T) {
+	h := &Handler{Repo: &fakeRepo{}}
+	rec := httptest.NewRecorder()
+	h.Search(rec, httptest.NewRequest("GET", "/api/v1/search", nil))
+	if rec.Code != 400 {
+		t.Fatalf("status = %d, want 400", rec.Code)
+	}
+}
+
+// fakeEmbedderFunc adapts a function to the Embedder interface.
+type fakeEmbedderFunc func(ctx context.Context, texts []string) ([][]float64, error)
+
+func (f fakeEmbedderFunc) Embed(ctx context.Context, texts []string) ([][]float64, error) {
+	return f(ctx, texts)
 }

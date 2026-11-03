@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: vitrine
+    static_configs:
+      - targets:
+          - gateway:8080
+          - catalog:8081
+          - order:8082
+          - worker:8084
+          - ai:8083

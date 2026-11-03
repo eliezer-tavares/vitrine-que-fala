@@ -11,13 +11,20 @@ import (
 )
 
 const (
-	PTBR    = "pt-BR"
-	ENUS    = "en-US"
+	PTBR = "pt-BR"
+	ENUS = "en-US"
+	IDID = "id-ID"
+	THTH = "th-TH"
+	VIVN = "vi-VN"
+	ZHTW = "zh-TW"
+
 	Default = PTBR
 )
 
-// Supported lists the locales served in v1.0.
-var Supported = []string{PTBR, ENUS}
+// Supported lists the locales served in v2.0 — the Shopee-market footprint
+// (ADR-0003): adding a locale is data (seed + i18n JSON), never code. The
+// negotiation logic below is untouched since v1.0 by design.
+var Supported = []string{PTBR, ENUS, IDID, THTH, VIVN, ZHTW}
 
 type candidate struct {
 	tag string

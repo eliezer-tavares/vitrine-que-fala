@@ -8,6 +8,10 @@ test.describe.configure({ mode: "parallel" });
 for (const [locale, heading] of [
   ["pt-BR", /vitrine que fala/i],
   ["en-US", /speaking storefront/i],
+  ["id-ID", /etalase yang berbicara/i],
+  ["th-TH", /หน้าร้านที่พูดได้/],
+  ["vi-VN", /gian hàng biết nói/i],
+  ["zh-TW", /會說話的店面/],
 ] as const) {
   test(`axe scan passes on the home page (${locale})`, async ({ page }) => {
     await mockCatalog(page);
@@ -31,7 +35,7 @@ for (const [locale, heading] of [
       localStorage.setItem("vqf.locale", lng);
     }, locale);
     await page.goto("/");
-    await page.getByRole("button", { name: /sem olhos|no-eyes/i }).click();
+    await page.getByRole("button", { name: /sem olhos|no-eyes|tanpa mata|ไร้สายตา|không cần mắt|無視覺體驗/i }).click();
     await expect(
       page.locator("html[data-blind-mode='on']"),
     ).toHaveCount(1);

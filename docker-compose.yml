@@ -1,8 +1,11 @@
 # Vitrine que Fala — local stack sized for an 8 GB RAM notebook (RAM-BUDGET.md).
+# v2.0: pgvector for semantic search (ADR-0009), gRPC ports between services
+# (ADR-0007), BROKER selection (redis|pubsub — ADR-0008) and an optional
+# observability profile (ADR-0010): docker compose --profile observability up -d
 # Usage: cp .env.example .env && docker compose up -d
 services:
   db:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-vitrine}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vitrine-dev}
@@ -28,7 +31,8 @@ services:
     build: ./ai-vision-service
     environment:
       PIPELINE: ${PIPELINE:-stub}
-      TESSERACT_LANGS: ${TESSERACT_LANGS:-por+eng}
+      EMBEDDER: ${EMBEDDER:-stub}
+      TESSERACT_LANGS: ${TESSERACT_LANGS:-por+eng+ind+tha+vie+chi_tra}
     ports:
       - "8083:8083"
 
@@ -39,12 +43,16 @@ services:
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-vitrine}:${POSTGRES_PASSWORD:-vitrine-dev}@db:5432/${POSTGRES_DB:-vitrine}
       REDIS_ADDR: redis:6379
+      AI_SERVICE_URL: http://ai:8083
+      BROKER: ${BROKER:-redis}
       PORT: 8081
+      GRPC_PORT: 9081
     depends_on:
       db: { condition: service_healthy }
       redis: { condition: service_healthy }
     ports:
       - "8081:8081"
+      - "9081:9081"
 
   order:
     build:
@@ -52,25 +60,29 @@ services:
       args: { SERVICE: order }
     environment:
       REDIS_ADDR: redis:6379
+      BROKER: ${BROKER:-redis}
       PORT: 8082
+      GRPC_PORT: 9082
     depends_on:
       redis: { condition: service_healthy }
     ports:
       - "8082:8082"
+      - "9082:9082"
 
   worker:
     build:
       context: ./backend
       args: { SERVICE: alttext-worker }
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-vitrine}:${POSTGRES_PASSWORD:-vitrine-dev}@db:5432/${POSTGRES_DB:-vitrine}
       REDIS_ADDR: redis:6379
+      BROKER: ${BROKER:-redis}
+      GRPC_CATALOG_ADDR: catalog:9081
       AI_SERVICE_URL: http://ai:8083
       WORKERS: "4"
       PORT: "8084"
     depends_on:
-      db: { condition: service_healthy }
       redis: { condition: service_healthy }
+      catalog: { condition: service_started }
       ai: { condition: service_started }
     ports:
       - "8084:8084"
@@ -81,8 +93,9 @@ services:
       args: { SERVICE: api-gateway }
     environment:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      GRPC_CATALOG_ADDR: catalog:9081
+      GRPC_ORDER_ADDR: order:9082
       CATALOG_URL: http://catalog:8081
-      ORDER_URL: http://order:8082
       AI_URL: http://ai:8083
       PORT: "8080"
     depends_on:
@@ -91,6 +104,29 @@ services:
       - ai
     ports:
       - "8080:8080"
+
+  # --- optional observability profile (ADR-0010) --------------------------
+  # Off by default so the 8 GB budget stays intact; start with:
+  #   docker compose --profile observability up -d
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    profiles: ["observability"]
+    volumes:
+      - ./infra/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    profiles: ["observability"]
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_USERS_DEFAULT_THEME: light
+    volumes:
+      - ./infra/grafana-datasource.yml:/etc/grafana/provisioning/datasources/vitrine.yml:ro
+    ports:
+      - "3000:3000"
 
 volumes:
   db-data:

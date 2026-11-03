@@ -7,6 +7,7 @@ import { AnnouncerProvider } from "./components/LiveRegion";
 import { Header } from "./components/Header";
 import { ProductDialog } from "./components/ProductDialog";
 import { ProductList } from "./components/ProductList";
+import { SearchBox } from "./components/SearchBox";
 import { SkipLink } from "./components/SkipLink";
 import { BlindModeProvider } from "./context/BlindModeContext";
 
@@ -41,7 +42,12 @@ export default function App() {
           {loadError ? (
             <p role="alert">{t("app.loadError")}</p>
           ) : (
-            <ProductList products={products} onOpen={setSelected} />
+            <>
+              {/* v2.0: multilingual semantic search filters the list in
+                  place; switching language reloads the full catalog. */}
+              <SearchBox onResults={setProducts} />
+              <ProductList products={products} onOpen={setSelected} />
+            </>
           )}
           <AltTextDemo />
         </main>
