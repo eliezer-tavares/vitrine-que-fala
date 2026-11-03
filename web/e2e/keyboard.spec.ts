@@ -43,7 +43,7 @@ test("keyboard-only flow: skip link, language switch, blind mode, dialog", async
 
   // Blind-mode toggle is a keyboard-operable toggle button.
   const blindToggle = page.getByRole("button", {
-    name: /no-eyes experience|experiência sem olhos/i,
+    name: /sem olhos|no-eyes|tanpa mata|ไร้สายตา|không cần mắt|無視覺體驗/i,
   });
   await blindToggle.focus();
   await expect(blindToggle).toHaveAttribute("aria-pressed", "false");
